@@ -16,6 +16,7 @@
   .card .desc { color:var(--mut); font-size:13px; margin:0 0 10px; min-height:34px; }
   .meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
   .tag { font-size:12px; padding:3px 8px; border-radius:20px; background:#232730; color:var(--mut); }
+  .tag.num { background:#16243a; color:#7fb4ff; font-weight:600; }
   .tag.diff { background:#2a2130; color:#c79bff; }
   .row { display:flex; justify-content:space-between; align-items:center; }
   button { cursor:pointer; border:none; border-radius:8px; padding:8px 12px; font-size:13px; font-weight:600; }
@@ -25,6 +26,7 @@
   form h2 { font-size:16px; margin:0 0 12px; }
   label { display:block; font-size:12px; color:var(--mut); margin:8px 0 4px; }
   input, select { width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line); background:#0c0e12; color:var(--txt); font-size:14px; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .btn-add { background:var(--acc); color:#fff; width:100%; margin-top:14px; padding:11px; }
   .empty { color:var(--mut); font-style:italic; }
   .err { color:var(--del); font-size:13px; margin-top:8px; }
@@ -44,8 +46,16 @@
     <input name="description" placeholder="Приседания со штангой" />
     <label>Мышечная группа</label>
     <input name="muscleGroup" placeholder="Ноги" />
-    <label>Длительность, мин</label>
-    <input name="durationMinutes" type="number" min="1" value="60" />
+    <div class="two">
+      <div>
+        <label>Подходы</label>
+        <input name="sets" type="number" min="1" value="3" />
+      </div>
+      <div>
+        <label>Повторения</label>
+        <input name="reps" type="number" min="1" value="10" />
+      </div>
+    </div>
     <label>Сложность</label>
     <select name="difficulty">
       <option>Легкая</option><option>Средняя</option><option>Тяжелая</option>
@@ -77,7 +87,8 @@ function render(items) {
       <p class="desc">${esc(w.description || "—")}</p>
       <div class="meta">
         <span class="tag">${esc(w.muscleGroup || "?")}</span>
-        <span class="tag">${w.durationMinutes} мин</span>
+        <span class="tag num">${w.sets} подх.</span>
+        <span class="tag num">${w.reps} повт.</span>
         <span class="tag diff">${esc(w.difficulty || "?")}</span>
       </div>
       <div class="row">
@@ -102,7 +113,8 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
     name: f.name.value.trim(),
     description: f.description.value.trim(),
     muscleGroup: f.muscleGroup.value.trim(),
-    durationMinutes: parseInt(f.durationMinutes.value, 10) || 0,
+    sets: parseInt(f.sets.value, 10) || 0,
+    reps: parseInt(f.reps.value, 10) || 0,
     difficulty: f.difficulty.value
   };
   const r = await fetch(API, {

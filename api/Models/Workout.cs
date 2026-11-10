@@ -1,11 +1,11 @@
 namespace WorkoutApp.Models;
-
 public class Workout
 {
     public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string MuscleGroup { get; set; } = string.Empty;
-    public int DurationMinutes { get; set; }
-    public string Difficulty { get; set; } = string.Empty;
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string MuscleGroup { get; set; } = "";
+    public int Sets { get; set; }
+    public int Reps { get; set; }
+    public string Difficulty { get; set; } = "";
 }
