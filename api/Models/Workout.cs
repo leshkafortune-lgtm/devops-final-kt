@@ -6,6 +6,6 @@ public class Workout
     public string Description { get; set; } = "";
     public string MuscleGroup { get; set; } = "";
     public int Sets { get; set; }
-    public int Reps { get; set; }
+    public int[] Reps { get; set; } = Array.Empty<int>();
     public string Difficulty { get; set; } = "";
 }

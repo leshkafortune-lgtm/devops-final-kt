@@ -26,7 +26,11 @@
   form h2 { font-size:16px; margin:0 0 12px; }
   label { display:block; font-size:12px; color:var(--mut); margin:8px 0 4px; }
   input, select { width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line); background:#0c0e12; color:var(--txt); font-size:14px; }
-  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .radios { display:flex; gap:16px; margin:6px 0 4px; }
+  .radios label { display:flex; align-items:center; gap:6px; margin:0; font-size:13px; color:var(--txt); }
+  .radios input[type=radio] { width:auto; }
+  .reps-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px; }
+  .reps-grid .cell label { margin:0 0 3px; }
   .btn-add { background:var(--acc); color:#fff; width:100%; margin-top:14px; padding:11px; }
   .empty { color:var(--mut); font-style:italic; }
   .err { color:var(--del); font-size:13px; margin-top:8px; }
@@ -46,16 +50,20 @@
     <input name="description" placeholder="Техника: штанга, гриф на трапециях" />
     <label>Мышечная группа</label>
     <input name="muscleGroup" placeholder="Группа: Грудь / Ноги / Спина" />
-    <div class="two">
-      <div>
-        <label>Подходы</label>
-        <input name="sets" type="number" min="1" value="3" />
-      </div>
-      <div>
-        <label>Повторения</label>
-        <input name="reps" type="number" min="1" value="10" />
-      </div>
+    <label>Подходы</label>
+    <input name="sets" id="setsInput" type="number" min="1" value="3" />
+
+    <label>Повторения</label>
+    <div class="radios">
+      <label><input type="radio" name="repmode" value="same" checked /> Одинаковые во всех подходах</label>
+      <label><input type="radio" name="repmode" value="diff" /> Разные по подходам</label>
     </div>
+
+    <div id="repsSameWrap">
+      <input name="repsSame" id="repsSame" type="number" min="1" value="10" />
+    </div>
+    <div id="repsDiffWrap" class="reps-grid" style="display:none"></div>
+
     <label>Сложность</label>
     <select name="difficulty">
       <option>Легкая</option><option>Средняя</option><option>Тяжелая</option>
@@ -68,6 +76,10 @@
 const API = "/workouts";
 const list = document.getElementById("list");
 const formErr = document.getElementById("formErr");
+const setsInput = document.getElementById("setsInput");
+const repsSameWrap = document.getElementById("repsSameWrap");
+const repsDiffWrap = document.getElementById("repsDiffWrap");
+const repsSame = document.getElementById("repsSame");
 
 async function load() {
   try {
@@ -79,6 +91,12 @@ async function load() {
   }
 }
 
+function fmtReps(arr) {
+  if (!arr || !arr.length) return "—";
+  const allSame = arr.every(v => v === arr[0]);
+  return allSame ? `${arr[0]} повт. ×${arr.length}` : arr.join("/") + " повт.";
+}
+
 function render(items) {
   if (!items.length) { list.innerHTML = '<div class="empty">Тренировок пока нет.</div>'; return; }
   list.innerHTML = items.map(w => `
@@ -88,7 +106,7 @@ function render(items) {
       <div class="meta">
         <span class="tag">${esc(w.muscleGroup || "?")}</span>
         <span class="tag num">${w.sets} подх.</span>
-        <span class="tag num">${w.reps} повт.</span>
+        <span class="tag num">${esc(fmtReps(w.reps))}</span>
         <span class="tag diff">${esc(w.difficulty || "?")}</span>
       </div>
       <div class="row">
@@ -105,16 +123,63 @@ async function del(id) {
   load();
 }
 
+function currentMode() {
+  return document.querySelector('input[name=repmode]:checked').value;
+}
+
+function buildDiffInputs(sets, oldVals) {
+  repsDiffWrap.innerHTML = "";
+  for (let i = 0; i < sets; i++) {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    const v = (oldVals && oldVals[i] != null) ? oldVals[i] : 10;
+    cell.innerHTML = `<label>Подход ${i+1}</label><input type="number" min="1" name="rep_${i}" value="${v}" />`;
+    repsDiffWrap.appendChild(cell);
+  }
+}
+
+function readDiffVals() {
+  const inputs = repsDiffWrap.querySelectorAll("input");
+  return Array.from(inputs).map(inp => parseInt(inp.value, 10) || 0);
+}
+
+function syncRepsUI() {
+  const mode = currentMode();
+  const sets = Math.max(1, parseInt(setsInput.value, 10) || 1);
+  if (mode === "same") {
+    repsSameWrap.style.display = "";
+    repsDiffWrap.style.display = "none";
+  } else {
+    repsSameWrap.style.display = "none";
+    repsDiffWrap.style.display = "";
+    buildDiffInputs(sets, readDiffVals());
+  }
+}
+
+setsInput.addEventListener("input", syncRepsUI);
+document.querySelectorAll('input[name=repmode]').forEach(r => r.addEventListener("change", syncRepsUI));
+syncRepsUI();
+
 document.getElementById("addForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   formErr.textContent = "";
   const f = e.target;
+  const sets = Math.max(1, parseInt(f.sets.value, 10) || 1);
+  let reps;
+  if (currentMode() === "same") {
+    const v = parseInt(repsSame.value, 10) || 0;
+    reps = Array(sets).fill(v);
+  } else {
+    reps = readDiffVals();
+    while (reps.length < sets) reps.push(0);
+    reps = reps.slice(0, sets);
+  }
   const body = {
     name: f.name.value.trim(),
     description: f.description.value.trim(),
     muscleGroup: f.muscleGroup.value.trim(),
-    sets: parseInt(f.sets.value, 10) || 0,
-    reps: parseInt(f.reps.value, 10) || 0,
+    sets: sets,
+    reps: reps,
     difficulty: f.difficulty.value
   };
   const r = await fetch(API, {
@@ -124,6 +189,7 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
   });
   if (!r.ok) { formErr.textContent = "Ошибка создания: " + r.status; return; }
   f.reset();
+  syncRepsUI();
   load();
 });
 

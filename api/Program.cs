@@ -24,8 +24,8 @@ using (var scope = app.Services.CreateScope())
     if (!db.Workouts.Any())
     {
         db.Workouts.AddRange(
-            new Workout { Name = "Грудь и трицепс", Description = "Жим лежа", MuscleGroup = "Грудь", Sets = 4, Reps = 10, Difficulty = "Средняя" },
-            new Workout { Name = "Спина и бицепс", Description = "Подтягивания", MuscleGroup = "Спина", Sets = 3, Reps = 12, Difficulty = "Средняя" }
+            new Workout { Name = "Грудь и трицепс", Description = "Жим лежа", MuscleGroup = "Грудь", Sets = 4, Reps = new[] { 10, 10, 10, 10 }, Difficulty = "Средняя" },
+            new Workout { Name = "Спина и бицепс", Description = "Подтягивания", MuscleGroup = "Спина", Sets = 3, Reps = new[] { 12, 10, 8 }, Difficulty = "Средняя" }
         );
         db.SaveChanges();
     }
@@ -47,6 +47,7 @@ app.MapGet("/workouts/{id}", async (int id, AppDbContext db) =>
 
 app.MapPost("/workouts", async (Workout w, AppDbContext db, IDistributedCache cache) =>
 {
+    w.Sets = w.Reps?.Length ?? 0;
     db.Workouts.Add(w);
     await db.SaveChangesAsync();
     await cache.RemoveAsync("all_workouts");
@@ -58,7 +59,9 @@ app.MapPut("/workouts/{id}", async (int id, Workout input, AppDbContext db, IDis
     var w = await db.Workouts.FindAsync(id);
     if (w is null) return Results.NotFound();
     w.Name = input.Name; w.Description = input.Description; w.MuscleGroup = input.MuscleGroup;
-    w.Sets = input.Sets; w.Reps = input.Reps; w.Difficulty = input.Difficulty;
+    w.Reps = input.Reps ?? Array.Empty<int>();
+    w.Sets = w.Reps.Length;
+    w.Difficulty = input.Difficulty;
     await db.SaveChangesAsync();
     await cache.RemoveAsync("all_workouts");
     return Results.Ok(w);
