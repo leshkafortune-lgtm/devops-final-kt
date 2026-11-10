@@ -31,18 +31,4 @@ curl http://localhost/workouts
 ```bash
 docker compose down      # БЕЗ флага -v
 docker compose up -d
-curl http://localhost/workouts   # данные сохранились (volume db_data)
-```
-
-## Архитектура C4
-Диаграммы трёх уровней — в папке [`docs/`](./docs/):
-- `context.png` — Level 1 (пользователь ↔ система);
-- `container.png` — Level 2 (4 контейнера, порты, протоколы);
-- `component.png` — Level 3 (внутренности API: Program.cs, AppDbContext, Cache Service, Endpoints);
-- `architecture.drawio` — редактируемый исходник.
-
-## Пользовательский сценарий
-GET список → POST «Ноги» → PUT правка длительности → DELETE → `down`/`up` → данные целы.
-
-## Обоснование дополнительных компонентов
-**Redis** выбран как in-memory кэш: чтений списка много, писаний мало, асинхронных задач нет — поэтому кэш оптимален, а очереди (RabbitMQ/Kafka) и объектное хранилище (MinIO/S3) избыточны. **Nginx** — единая точка входа: скрывает внутренний порт API, готов к балансировке/масштабированию без правок кода. 
+curl http://localhost/workouts   # данные сохранились
