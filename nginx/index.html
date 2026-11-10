@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WorkoutApp — тренировки</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --line:#2a2e37; --txt:#e6e8ec; --mut:#9aa3b2; --acc:#4f8cff; --del:#ff5c6c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); padding:24px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { color:var(--mut); margin:0 0 20px; font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-bottom:24px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .card h3 { margin:0 0 6px; font-size:16px; }
+  .card .desc { color:var(--mut); font-size:13px; margin:0 0 10px; min-height:34px; }
+  .meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .tag { font-size:12px; padding:3px 8px; border-radius:20px; background:#232730; color:var(--mut); }
+  .tag.diff { background:#2a2130; color:#c79bff; }
+  .row { display:flex; justify-content:space-between; align-items:center; }
+  button { cursor:pointer; border:none; border-radius:8px; padding:8px 12px; font-size:13px; font-weight:600; }
+  .btn-del { background:transparent; color:var(--del); border:1px solid #3a2226; }
+  .btn-del:hover { background:#2a1418; }
+  form { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; max-width:520px; }
+  form h2 { font-size:16px; margin:0 0 12px; }
+  label { display:block; font-size:12px; color:var(--mut); margin:8px 0 4px; }
+  input, select { width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line); background:#0c0e12; color:var(--txt); font-size:14px; }
+  .btn-add { background:var(--acc); color:#fff; width:100%; margin-top:14px; padding:11px; }
+  .empty { color:var(--mut); font-style:italic; }
+  .err { color:var(--del); font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+  <h1>WorkoutApp</h1>
+  <p class="sub">Список тренировок · REST API через Nginx gateway</p>
+
+  <div id="list" class="grid"></div>
+
+  <form id="addForm">
+    <h2>Добавить тренировку</h2>
+    <label>Название</label>
+    <input name="name" required placeholder="Например: Ноги" />
+    <label>Описание</label>
+    <input name="description" placeholder="Приседания со штангой" />
+    <label>Мышечная группа</label>
+    <input name="muscleGroup" placeholder="Ноги" />
+    <label>Длительность, мин</label>
+    <input name="durationMinutes" type="number" min="1" value="60" />
+    <label>Сложность</label>
+    <select name="difficulty">
+      <option>Легкая</option><option>Средняя</option><option>Тяжелая</option>
+    </select>
+    <button class="btn-add" type="submit">Создать</button>
+    <div id="formErr" class="err"></div>
+  </form>
+
+<script>
+const API = "/workouts";
+const list = document.getElementById("list");
+const formErr = document.getElementById("formErr");
+
+async function load() {
+  try {
+    const r = await fetch(API);
+    const data = await r.json();
+    render(data);
+  } catch (e) {
+    list.innerHTML = '<div class="err">Не удалось загрузить данные: ' + e.message + '</div>';
+  }
+}
+
+function render(items) {
+  if (!items.length) { list.innerHTML = '<div class="empty">Тренировок пока нет.</div>'; return; }
+  list.innerHTML = items.map(w => `
+    <div class="card">
+      <h3>${esc(w.name)}</h3>
+      <p class="desc">${esc(w.description || "—")}</p>
+      <div class="meta">
+        <span class="tag">${esc(w.muscleGroup || "?")}</span>
+        <span class="tag">${w.durationMinutes} мин</span>
+        <span class="tag diff">${esc(w.difficulty || "?")}</span>
+      </div>
+      <div class="row">
+        <small style="color:var(--mut)">id=${w.id}</small>
+        <button class="btn-del" onclick="del(${w.id})">Удалить</button>
+      </div>
+    </div>`).join("");
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+async function del(id) {
+  await fetch(API + "/" + id, { method: "DELETE" });
+  load();
+}
+
+document.getElementById("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  formErr.textContent = "";
+  const f = e.target;
+  const body = {
+    name: f.name.value.trim(),
+    description: f.description.value.trim(),
+    muscleGroup: f.muscleGroup.value.trim(),
+    durationMinutes: parseInt(f.durationMinutes.value, 10) || 0,
+    difficulty: f.difficulty.value
+  };
+  const r = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) { formErr.textContent = "Ошибка создания: " + r.status; return; }
+  f.reset();
+  load();
+});
+
+load();
+</script>
+</body>
+</html>
