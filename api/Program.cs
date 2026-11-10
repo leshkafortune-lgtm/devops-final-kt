@@ -24,8 +24,8 @@ using (var scope = app.Services.CreateScope())
     if (!db.Workouts.Any())
     {
         db.Workouts.AddRange(
-            new Workout { Name = "Грудь и трицепс", Description = "Жим лежа", MuscleGroup = "Грудь", Sets = 4, Reps = new[] { 10, 10, 10, 10 }, Difficulty = "Средняя" },
-            new Workout { Name = "Спина и бицепс", Description = "Подтягивания", MuscleGroup = "Спина", Sets = 3, Reps = new[] { 12, 10, 8 }, Difficulty = "Средняя" }
+            new Workout { Name = "Жим лёжа", MuscleGroup = "Грудь", Sets = 4, Reps = new[] { 10, 10, 10, 10 }, Weight = 60, WeightUnit = "kg", Difficulty = "Средняя" },
+            new Workout { Name = "Подтягивания", MuscleGroup = "Спина", Sets = 3, Reps = new[] { 12, 10, 8 }, Weight = null, WeightUnit = "kg", Difficulty = "Средняя" }
         );
         db.SaveChanges();
     }
@@ -48,6 +48,7 @@ app.MapGet("/workouts/{id}", async (int id, AppDbContext db) =>
 app.MapPost("/workouts", async (Workout w, AppDbContext db, IDistributedCache cache) =>
 {
     w.Sets = w.Reps?.Length ?? 0;
+    if (string.IsNullOrEmpty(w.WeightUnit)) w.WeightUnit = "kg";
     db.Workouts.Add(w);
     await db.SaveChangesAsync();
     await cache.RemoveAsync("all_workouts");
@@ -58,9 +59,10 @@ app.MapPut("/workouts/{id}", async (int id, Workout input, AppDbContext db, IDis
 {
     var w = await db.Workouts.FindAsync(id);
     if (w is null) return Results.NotFound();
-    w.Name = input.Name; w.Description = input.Description; w.MuscleGroup = input.MuscleGroup;
+    w.Name = input.Name; w.MuscleGroup = input.MuscleGroup;
     w.Reps = input.Reps ?? Array.Empty<int>();
     w.Sets = w.Reps.Length;
+    w.Weight = input.Weight; w.WeightUnit = string.IsNullOrEmpty(input.WeightUnit) ? "kg" : input.WeightUnit;
     w.Difficulty = input.Difficulty;
     await db.SaveChangesAsync();
     await cache.RemoveAsync("all_workouts");

@@ -1,1 +1,1 @@
-{ "name": "Ноги", "description": "Приседания со штангой", "muscleGroup": "Ноги", "sets": 5, "reps": [5, 4, 3, 2, 1], "difficulty": "Тяжелая" }
+{ "name": "Становая тяга", "muscleGroup": "Спина ноги", "sets": 5, "reps": [5, 4, 3, 2, 1], "weight": 100, "weightUnit": "kg", "difficulty": "Тяжелая" }

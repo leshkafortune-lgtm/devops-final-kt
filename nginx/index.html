@@ -12,11 +12,11 @@
   p.sub { color:var(--mut); margin:0 0 20px; font-size:14px; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-bottom:24px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
-  .card h3 { margin:0 0 6px; font-size:16px; }
-  .card .desc { color:var(--mut); font-size:13px; margin:0 0 10px; min-height:34px; }
+  .card h3 { margin:0 0 10px; font-size:16px; }
   .meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
   .tag { font-size:12px; padding:3px 8px; border-radius:20px; background:#232730; color:var(--mut); }
   .tag.num { background:#16243a; color:#7fb4ff; font-weight:600; }
+  .tag.wt { background:#15271c; color:#7fd6a0; font-weight:600; }
   .tag.diff { background:#2a2130; color:#c79bff; }
   .row { display:flex; justify-content:space-between; align-items:center; }
   button { cursor:pointer; border:none; border-radius:8px; padding:8px 12px; font-size:13px; font-weight:600; }
@@ -26,11 +26,14 @@
   form h2 { font-size:16px; margin:0 0 12px; }
   label { display:block; font-size:12px; color:var(--mut); margin:8px 0 4px; }
   input, select { width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line); background:#0c0e12; color:var(--txt); font-size:14px; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .three { display:grid; grid-template-columns:2fr 1fr; gap:10px; }
   .radios { display:flex; gap:16px; margin:6px 0 4px; }
   .radios label { display:flex; align-items:center; gap:6px; margin:0; font-size:13px; color:var(--txt); }
   .radios input[type=radio] { width:auto; }
   .reps-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px; }
   .reps-grid .cell label { margin:0 0 3px; }
+  .hint { font-size:11px; color:var(--mut); margin:4px 0 0; }
   .btn-add { background:var(--acc); color:#fff; width:100%; margin-top:14px; padding:11px; }
   .empty { color:var(--mut); font-style:italic; }
   .err { color:var(--del); font-size:13px; margin-top:8px; }
@@ -46,10 +49,9 @@
     <h2>Добавить тренировку</h2>
     <label>Упражнение</label>
     <input name="name" required placeholder="Например: Жим лёжа" />
-    <label>Описание</label>
-    <input name="description" placeholder="Техника: штанга, гриф на трапециях" />
     <label>Мышечная группа</label>
-    <input name="muscleGroup" placeholder="Группа: Грудь / Ноги / Спина" />
+    <input name="muscleGroup" placeholder="Например: Грудь" />
+
     <label>Подходы</label>
     <input name="sets" id="setsInput" type="number" min="1" value="3" />
 
@@ -58,11 +60,25 @@
       <label><input type="radio" name="repmode" value="same" checked /> Одинаковые во всех подходах</label>
       <label><input type="radio" name="repmode" value="diff" /> Разные по подходам</label>
     </div>
-
     <div id="repsSameWrap">
       <input name="repsSame" id="repsSame" type="number" min="1" value="10" />
     </div>
     <div id="repsDiffWrap" class="reps-grid" style="display:none"></div>
+
+    <div class="three">
+      <div>
+        <label>Вес</label>
+        <input name="weight" id="weightInput" type="number" min="0" step="0.5" placeholder="пусто = свой вес" />
+      </div>
+      <div>
+        <label>Единица</label>
+        <select name="weightUnit">
+          <option value="kg">кг</option>
+          <option value="lbs">lbs</option>
+        </select>
+      </div>
+    </div>
+    <p class="hint">Оставь вес пустым для упражнений с собственным весом (подтягивания, отжимания).</p>
 
     <label>Сложность</label>
     <select name="difficulty">
@@ -80,6 +96,7 @@ const setsInput = document.getElementById("setsInput");
 const repsSameWrap = document.getElementById("repsSameWrap");
 const repsDiffWrap = document.getElementById("repsDiffWrap");
 const repsSame = document.getElementById("repsSame");
+const UNIT_RU = { kg: "кг", lbs: "lbs" };
 
 async function load() {
   try {
@@ -97,23 +114,32 @@ function fmtReps(arr) {
   return allSame ? `${arr[0]} повт. ×${arr.length}` : arr.join("/") + " повт.";
 }
 
+function fmtWeight(w) {
+  if (w.weight == null || w.weight === "" || Number(w.weight) === 0) return null;
+  return `${w.weight} ${UNIT_RU[w.weightUnit] || w.weightUnit || "кг"}`;
+}
+
 function render(items) {
   if (!items.length) { list.innerHTML = '<div class="empty">Тренировок пока нет.</div>'; return; }
-  list.innerHTML = items.map(w => `
+  list.innerHTML = items.map(w => {
+    const wt = fmtWeight(w);
+    const wtTag = wt ? `<span class="tag wt">${esc(wt)}</span>` : `<span class="tag">свой вес</span>`;
+    return `
     <div class="card">
       <h3>${esc(w.name)}</h3>
-      <p class="desc">${esc(w.description || "—")}</p>
       <div class="meta">
         <span class="tag">${esc(w.muscleGroup || "?")}</span>
         <span class="tag num">${w.sets} подх.</span>
         <span class="tag num">${esc(fmtReps(w.reps))}</span>
+        ${wtTag}
         <span class="tag diff">${esc(w.difficulty || "?")}</span>
       </div>
       <div class="row">
         <small style="color:var(--mut)">id=${w.id}</small>
         <button class="btn-del" onclick="del(${w.id})">Удалить</button>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -174,12 +200,15 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
     while (reps.length < sets) reps.push(0);
     reps = reps.slice(0, sets);
   }
+  const wRaw = f.weight.value.trim();
+  const weight = wRaw === "" ? null : (parseFloat(wRaw) || 0);
   const body = {
     name: f.name.value.trim(),
-    description: f.description.value.trim(),
     muscleGroup: f.muscleGroup.value.trim(),
     sets: sets,
     reps: reps,
+    weight: weight,
+    weightUnit: f.weightUnit.value,
     difficulty: f.difficulty.value
   };
   const r = await fetch(API, {

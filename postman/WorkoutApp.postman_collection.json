@@ -3,8 +3,8 @@
   "item": [
     { "name": "GET all workouts", "request": { "method": "GET", "url": "http://localhost/workouts" } },
     { "name": "GET workout by id", "request": { "method": "GET", "url": "http://localhost/workouts/1" } },
-    { "name": "POST create", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Плечи\",\"description\":\"Жим штанги\",\"muscleGroup\":\"Плечи\",\"sets\":4,\"reps\":12,\"difficulty\":\"Средняя\"}" }, "url": "http://localhost/workouts" } },
-    { "name": "PUT update", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Плечи 2\",\"description\":\"Жим 2\",\"muscleGroup\":\"Плечи\",\"sets\":5,\"reps\":8,\"difficulty\":\"Тяжелая\"}" }, "url": "http://localhost/workouts/1" } },
+    { "name": "POST create", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Жим ганей\",\"muscleGroup\":\"Плечи\",\"sets\":4,\"reps\":[12,10,8,6],\"weight\":20,\"weightUnit\":\"kg\",\"difficulty\":\"Средняя\"}" }, "url": "http://localhost/workouts" } },
+    { "name": "PUT update", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Жим ганей\",\"muscleGroup\":\"Плечи\",\"sets\":3,\"reps\":[10,10,10],\"weight\":null,\"weightUnit\":\"kg\",\"difficulty\":\"Легкая\"}" }, "url": "http://localhost/workouts/1" } },
     { "name": "DELETE", "request": { "method": "DELETE", "url": "http://localhost/workouts/1" } }
   ]
 }
